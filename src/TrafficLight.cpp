@@ -10,7 +10,14 @@ T MessageQueue<T>::receive()
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
     // to wait for and receive new messages and pull them from the queue using move semantics. 
-    // The received object should then be returned by the receive function. 
+    // The received object should then be returned by the receive function.
+    std::unique_lock<std::mutex> uniqueLock(_mutex);
+    _cv.template wait_for(uniqueLock, std::chrono::minutes(10)){
+      throw std::runtime_error("we wait more than 10 minutes. Probably, we have problem in the code!");
+    }
+    T message = std::move(_queue.back());
+    _queue.pop_back();
+    return message;
 }
 
 template <typename T>
@@ -18,6 +25,10 @@ void MessageQueue<T>::send(T &&msg)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
+
+    std::lock_guard<std::mutex> lockGv(_mutex);
+    _queue.emplace_back(std::move(msg));
+    _cv.notify_one();
 }
 
 
