@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include "TrafficObject.h"
 
-enum TrafficLightPhase {red, green};
+enum TrafficLightPhase {RED, GREEN};
 
 // forward declarations to avoid include cycle
 class Vehicle;

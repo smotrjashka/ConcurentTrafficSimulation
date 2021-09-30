@@ -26,7 +26,7 @@ void MessageQueue<T>::send(T &&msg)
 
 TrafficLight::TrafficLight()
 {
-    _currentPhase = TrafficLightPhase::red;
+    _currentPhase = TrafficLightPhase::RED;
 }
 
 void TrafficLight::waitForGreen()
@@ -44,6 +44,7 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 void TrafficLight::simulate()
 {
     // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class. 
+    TrafficObject::threads.emplace_back(&TrafficLight::cycleThroughPhases, this);
 }
 
 // virtual function which is executed in a thread
@@ -52,5 +53,34 @@ void TrafficLight::cycleThroughPhases()
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
-    // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
+    // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
+
+    std::chrono::time_point<std::chrono::system_clock> start_time, now;
+    int additional;
+
+    while(true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        start_time = std::chrono::system_clock::now();
+
+            TrafficLightPhase oldPhase = _currentPhase;
+        if (oldPhase == TrafficLightPhase::RED) {
+            _currentPhase = TrafficLightPhase::GREEN;
+        } else{
+            _currentPhase = TrafficLightPhase::RED;
+        }
+
+        now = std::chrono::system_clock::now();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - now);
+
+        if (milliseconds.count() < 4000){
+            additional = 4000 - milliseconds.count();
+            //rand()%5 will give us value between 0 and 999*2
+            additional += std::rand()%5;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(additional));
+
+        _queue.send(std::move(_currentPhase));
+
+
+    }
 }
