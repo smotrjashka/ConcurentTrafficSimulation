@@ -12,9 +12,7 @@ T MessageQueue<T>::receive()
     // to wait for and receive new messages and pull them from the queue using move semantics. 
     // The received object should then be returned by the receive function.
     std::unique_lock<std::mutex> uniqueLock(_mutex);
-    _cv.template wait_for(uniqueLock, std::chrono::minutes(10)){
-      throw std::runtime_error("we wait more than 10 minutes. Probably, we have problem in the code!");
-    }
+    _cv.template wait_for(uniqueLock, std::chrono::minutes(10));
     T message = std::move(_queue.back());
     _queue.pop_back();
     return message;
