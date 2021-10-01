@@ -25,7 +25,8 @@ void MessageQueue<T>::send(T &&msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
 
     std::lock_guard<std::mutex> lockGv(_mutex);
-    _queue.emplace_back(std::move(msg));
+    _queue.clear();
+    _queue.emplace_back(msg);
     _cv.notify_one();
 }
 
@@ -37,6 +38,14 @@ TrafficLight::TrafficLight()
 {
     _currentPhase = TrafficLightPhase::RED;
 }
+
+TrafficLight::~TrafficLight() {
+    // is this a wright way to construct a destructor??))
+    delete _currentPhase;
+    delete _mutex;
+    delete _condition;
+}
+
 
 void TrafficLight::waitForGreen()
 {
@@ -68,31 +77,34 @@ void TrafficLight::cycleThroughPhases()
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
 
-    std::chrono::time_point<std::chrono::system_clock> start_time, now;
-    int additional;
+    std::chrono::time_point<std::chrono::system_clock> last_update;
+    std::random_device rd;
+    std::mt19937 eng(rd());
+    std::uniform_int_distribution<> distribution(4000, 6000);
+    int cycle_duration;
+
+    //init last update for start
+    lastUpdate = std::chrono::system_clock::now();
 
     while(true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        start_time = std::chrono::system_clock::now();
 
+        // compute time difference to stop watch
+        long timeSinceLastUpdate
+        = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_update).count();
+
+        cycle_duration = distribution(eng);
+
+        if (timeSinceLastUpdate >= cycle_duration) {
             TrafficLightPhase oldPhase = _currentPhase;
-        if (oldPhase == TrafficLightPhase::RED) {
-            _currentPhase = TrafficLightPhase::GREEN;
-        } else{
-            _currentPhase = TrafficLightPhase::RED;
+            if (oldPhase == TrafficLightPhase::RED) {
+                _currentPhase = TrafficLightPhase::GREEN;
+            } else {
+                _currentPhase = TrafficLightPhase::RED;
+            }
+            _queue.send(std::move(_currentPhase));
+            last_update = std::chrono::system_clock::now();
         }
-
-        now = std::chrono::system_clock::now();
-        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - now);
-
-        if (milliseconds.count() < 4000){
-            additional = 4000 - milliseconds.count();
-            //rand()%5 will give us value between 0 and 999*2
-            additional += std::rand()%5;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(additional));
-
-        _queue.send(std::move(_currentPhase));
 
 
     }
