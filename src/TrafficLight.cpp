@@ -41,9 +41,9 @@ TrafficLight::TrafficLight()
 
 TrafficLight::~TrafficLight() {
     // is this a wright way to construct a destructor??))
-    delete _currentPhase;
-    delete _mutex;
-    delete _condition;
+    delete &_currentPhase;
+    delete &_mutex;
+    delete &_condition;
 }
 
 
@@ -84,7 +84,7 @@ void TrafficLight::cycleThroughPhases()
     int cycle_duration;
 
     //init last update for start
-    lastUpdate = std::chrono::system_clock::now();
+    last_update = std::chrono::system_clock::now();
 
     while(true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
